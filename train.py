@@ -1,14 +1,20 @@
+from datetime import datetime
+from typing import Tuple
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+from torchtext.data.iterator import Iterator
+from torchtext.vocab import Vocab
 
-from datetime import datetime
 
 from utils import to_onehot, seq_to_str
 from bleu import moses_multi_bleu
 
 
-def _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Train'):
+def _train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_size: int,
+           dl: Iterator, vocab: Vocab, device: str, mode: str = 'Train') -> Tuple[float, float, float, float]:
+
     if mode == 'Train':
         enc.train()
         dec.train()
@@ -47,7 +53,7 @@ def _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Train'):
             disc.zero_grad()
 
         z = torch.randn((batch_size, prior_size)).to(device)
-        z_label = to_onehot(torch.tensor(np.random.randint(0, 2, (batch_size))), 2, device)
+        z_label = to_onehot(torch.randint(0, 2, (batch_size, )).long(), 2, device)
 
         latent = enc(seq)
         fake_pred = disc(latent, label)
@@ -103,7 +109,7 @@ def _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Train'):
         disc_loss += disc_loss.item()
 
         _, w_idxs = output.topk(1, dim=1)
-        dec_seq = torch.tensor(w_idxs.view(seq_len, batch_size))
+        dec_seq = w_idxs.view(seq_len, batch_size)
 
         strs.extend(seq_to_str(seq.detach(), vocab))
         dec_strs.extend(seq_to_str(dec_seq.detach(), vocab))
@@ -120,9 +126,13 @@ def _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Train'):
     return ae_loss, g_loss, disc_loss, bleu
 
 
-def train(epoch, enc, dec, disc, prior_size, dl, vocab, device):
-    _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Train')
+def train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_size: int,
+          dl: Iterator, vocab: Vocab, device: str) -> Tuple[float, float, float, float]:
+
+    return _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Train')
 
 
-def validate(epoch, enc, dec, disc, prior_size, dl, vocab, device):
-    _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Valid')
+def validate(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_size: int,
+             dl: Iterator, vocab: Vocab, device: str) -> Tuple[float, float, float, float]:
+
+    return _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Valid')

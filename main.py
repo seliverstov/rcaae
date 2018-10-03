@@ -15,24 +15,24 @@ from dataset import Multi30KEminem
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='RCAAE')
-    parser.add_argument('--num-epochs', type=int, default=1, metavar='NE',
-                        help='num epochs (default: 1)')
-    parser.add_argument('--batch-size', type=int, default=32, metavar='BS',
+    parser.add_argument('--num-epochs', type=int, default=3, metavar='NE',
+                        help='num epochs (default: 3)')
+    parser.add_argument('--batch-size', type=int, default=64, metavar='BS',
                         help='batch size (default: 64)')
     parser.add_argument('--learning-rate', type=float, default=0.0001, metavar='LR',
                         help='learning rate (default: 0.0001)')
-    parser.add_argument('--dropout', type=float, default=0.0, metavar='DR',
-                        help='dropout (default: 0.0)')
-    parser.add_argument('--hidden-size', type=int, default=100, metavar='HS',
-                        help='LSTM hidden size (default: 100)')
+    parser.add_argument('--dropout', type=float, default=0.3, metavar='DR',
+                        help='dropout (default: 0.3)')
+    parser.add_argument('--hidden-size', type=int, default=500, metavar='HS',
+                        help='LSTM hidden size (default: 500)')
     parser.add_argument('--seed', type=int, default=42, metavar='SEED',
                         help='seed (default: 42)')
-    parser.add_argument('--embeddings-size', type=int, default=50, metavar='ES',
-                        help='embeddings size (default: 50)')
-    parser.add_argument('--vectors', type=str, default='glove.6B.50d', metavar='V',
-                        help='embeddings size (default: glove.6B.50d)')
-    parser.add_argument('--cuda', type=int, default=0, metavar='CUDA',
-                        help='CUDA device numer (default: 0)')
+    parser.add_argument('--embeddings-size', type=int, default=300, metavar='ES',
+                        help='embeddings size (default: 300)')
+    parser.add_argument('--vectors', type=str, default='fasttext.en.300d', metavar='V',
+                        help='embeddings size (default: fasttext.en.300d)')
+    parser.add_argument('--cuda', type=int, default=6, metavar='CUDA',
+                        help='CUDA device numer (default: 6)')
 
 
     args = parser.parse_args()
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         device_num=-1
         device="cpu"
 
-    Multi30KEminem.download('.')
+    Multi30KEminem.download('..')
 
     TEXT = torchtext.data.Field(eos_token='<eos>',
                                 init_token='<sos>',
@@ -75,10 +75,10 @@ if __name__ == "__main__":
 
     prior_size = 2 * args.hidden_size
 
-    enc = Encoder(vocab_size, args.embeddings_size, args.hidden_size, n_layers=1,
+    enc = Encoder(vocab_size, args.embeddings_size, args.hidden_size, n_layers=3,
                   dropout=args.dropout, lr=args.learning_rate, vectors=TEXT.vocab.vectors).to(device)
 
-    dec = Decoder(vocab_size, args.embeddings_size, args.hidden_size, prior_size + label_size, n_layers=1,
+    dec = Decoder(vocab_size, args.embeddings_size, args.hidden_size, prior_size + label_size, n_layers=3,
                   dropout=args.dropout, lr=args.learning_rate, vectors=TEXT.vocab.vectors).to(device)
 
     disc = Discriminator([prior_size + label_size, args.hidden_size, 1],

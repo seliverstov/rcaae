@@ -1,11 +1,15 @@
+from typing import List, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
 
 
 class Encoder(nn.Module):
-    def __init__(self, vocab_size, emb_size, hidden_size, n_layers, lr=1e-4, dropout=0.0, vectors=None):
+    def __init__(self, vocab_size: int, emb_size: int, hidden_size: int, n_layers: int,
+                 lr: float = 1e-4, dropout: float = False, vectors: Tensor = None) -> None:
         super().__init__()
+
         self.emb = nn.Embedding(vocab_size, emb_size)
         if vectors is not None:
             self.emb.weight.data.copy_(vectors)
@@ -15,7 +19,7 @@ class Encoder(nn.Module):
 
         self.optim = self.optim = torch.optim.Adam(self.learnable_parameters(), lr)
 
-    def forward(self, x, hidden=None):
+    def forward(self, x: Tensor, hidden: Tensor = None) -> Tensor:
         x = self.emb(x)
         o, (h, c) = self.rnn(x, hidden)
 
@@ -26,12 +30,13 @@ class Encoder(nn.Module):
 
         return c
 
-    def learnable_parameters(self):
+    def learnable_parameters(self) -> List[nn.Parameter]:
         return [p for p in self.parameters() if p.requires_grad]
 
 
 class Decoder(nn.Module):
-    def __init__(self, vocab_size, emb_size, hidden_size, prior_size, n_layers, dropout=0.0, lr=1e-4, vectors=None):
+    def __init__(self, vocab_size: int, emb_size: int, hidden_size: int, prior_size: int, n_layers: int,
+                 lr: float = 1e-4, dropout: float = False, vectors: Tensor = None) -> None:
         super().__init__()
         self.emb = nn.Embedding(vocab_size, emb_size)
         if vectors is not None:
@@ -44,7 +49,7 @@ class Decoder(nn.Module):
 
         self.optim = self.optim = torch.optim.Adam(self.learnable_parameters(), lr)
 
-    def forward(self, x, z, hidden=None, y=None):
+    def forward(self, x: Tensor, z: Tensor, hidden: Tensor = None, y: Tensor = None) -> Tuple[Tensor, Tensor]:
         x = self.emb(x)
 
         (seq_len, batch_size, emb_size) = x.shape
@@ -65,12 +70,13 @@ class Decoder(nn.Module):
         x = F.log_softmax(self.fc(x), dim=1)
         return x, h
 
-    def learnable_parameters(self):
+    def learnable_parameters(self) -> List[nn.Parameter]:
         return [p for p in self.parameters() if p.requires_grad]
 
 
 class Discriminator(nn.Module):
-    def __init__(self, sizes, dropout=False, lr=1e-4, bn=False, activation_fn=nn.Tanh(), last_fn=None, first_fn=None):
+    def __init__(self, sizes, dropout: float = False, lr: float = 1e-4, bn: bool = False,
+                 activation_fn: nn.Module = nn.Tanh(), last_fn: nn.Module = None, first_fn: nn.Module = None) -> None:
         super().__init__()
 
         layers = []
@@ -92,7 +98,7 @@ class Discriminator(nn.Module):
 
         self.optim = torch.optim.Adam(self.parameters(), lr)
 
-    def forward(self, x, y=None):
+    def forward(self, x: Tensor, y: Tensor = None) -> Tensor:
         if y is not None:
             x = torch.cat([x, y], dim=1)
         return self.model(x)
