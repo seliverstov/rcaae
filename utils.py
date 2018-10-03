@@ -4,8 +4,10 @@ from spacy.symbols import ORTH, LEMMA, POS, TAG
 import re
 
 
-def to_onehot(data, n_digits):
-    y = torch.zeros(data.shape[0], n_digits).scatter(1,data[:,None],1)
+def to_onehot(data, n_digits, device):
+    d = data.to(device)
+    y = torch.zeros(d.shape[0], n_digits).to(device)
+    y = y.scatter(1, d[:, None], 1).to(device)
     return y
 
 
@@ -17,14 +19,14 @@ def seq_to_str(seq, vocab):
     return result
 
 
-def decode_z(dec, z, seq_len, label, vocab):
+def decode_z(dec, z, seq_len, label, vocab, device):
     dec.eval()
 
     (batch_size, hidden_size) = z.shape
 
-    label = to_onehot(label, 2)
+    label = to_onehot(label, 2, device)
 
-    x = torch.zeros(1, batch_size).long() + vocab.stoi['<sos>']
+    x = torch.zeros(1, batch_size).to(device).long() + vocab.stoi['<sos>']
     h = None
 
     dec_seq = None
@@ -40,7 +42,7 @@ def decode_z(dec, z, seq_len, label, vocab):
     return dec_seq
 
 
-def print_decoded(enc, dec, dl, vocab):
+def print_decoded(enc, dec, dl, vocab, device):
     enc.eval()
     dec.eval()
 
@@ -54,7 +56,7 @@ def print_decoded(enc, dec, dl, vocab):
 
     z = enc(seq)
 
-    dec_seq = decode_z(dec, z, seq_len, label, vocab)
+    dec_seq = decode_z(dec, z, seq_len, label, vocab, device)
 
     origin = seq_to_str(seq.detach(), vocab)[0].replace(" <nl> ", "\n\t")
     decoded = seq_to_str(dec_seq.detach(), vocab)[0].replace(" <nl> ", "\n\t")
@@ -63,38 +65,36 @@ def print_decoded(enc, dec, dl, vocab):
     print("\nDecoded: {}\n\t".format(decoded))
 
 
-def print_sample(dec, sample_size, max_seq_len, vocab, style_vocab):
+def print_sample(dec, sample_size, max_seq_len, vocab, style_vocab, device):
     dec.eval()
 
-    z = torch.randn(1, sample_size)
+    z = torch.randn(1, sample_size).to(device)
     print("\nRandom sample:")
 
-    label_0 = torch.zeros(1).long()
-    dec_seq = decode_z(dec, z, max_seq_len, label_0, vocab)
+    label_0 = torch.zeros(1).long().to(device)
+    dec_seq = decode_z(dec, z, max_seq_len, label_0, vocab, device)
     seq_0 = seq_to_str(dec_seq.detach(), vocab)[0].replace(" <nl> ", "\n\t")
     print("\nDecoded w. style {}:\n\t{}".format(style_vocab.itos[0], seq_0))
 
-    label_1 = (torch.zeros(1) + 1).long()
-    dec_seq = decode_z(dec, z, max_seq_len, label_1, vocab)
+    label_1 = (torch.zeros(1) + 1).long().to(device)
+    dec_seq = decode_z(dec, z, max_seq_len, label_1, vocab, device)
     seq_1 = seq_to_str(dec_seq.detach(), vocab)[0].replace(" <nl> ", "\n\t")
     print("\nDecoded w. style {}:\n\t{}\n".format(style_vocab.itos[1], seq_1))
 
 
 NLP = spacy.load('en')
+special_case = [{ORTH: '<nl>'}]
+NLP.tokenizer.add_special_case('<nl>', special_case)
 
 
 def tokenizer(s):
+    if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
+        s = s[1:-1]
+
     s = re.sub(r"[\*\"“”\n\\…\+\-\/\=\(\)‘•:\[\]\|’\!;]", " ", str(s))
     s = re.sub(r"[ ]+", " ", s)
     s = re.sub(r"\!+", "!", s)
     s = re.sub(r"\,+", ",", s)
     s = re.sub(r"\?+", "?", s)
-    if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
-        s = s[1:-1]
-    MAX_CHARS = 20_000
-    if (len(s) > MAX_CHARS):
-        s = s[:MAX_CHARS]
 
-    special_case = [{ORTH: '<nl>'}]
-    NLP.tokenizer.add_special_case('<nl>', special_case)
     return [x.text for x in NLP.tokenizer(s) if x.text != " "]

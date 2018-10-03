@@ -8,7 +8,7 @@ from utils import to_onehot, seq_to_str
 from bleu import moses_multi_bleu
 
 
-def _train(epoch, enc, dec, disc, prior_size, dl, vocab, mode='Train'):
+def _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Train'):
     if mode == 'Train':
         enc.train()
         dec.train()
@@ -33,12 +33,12 @@ def _train(epoch, enc, dec, disc, prior_size, dl, vocab, mode='Train'):
         seq = seq[1:]
 
         label = batch.label
-        label = to_onehot(label, 2)
+        label = to_onehot(label, 2, device)
 
         (seq_len, batch_size) = seq.shape
 
-        batch_zeros = torch.zeros((batch_size, 1))
-        batch_ones = torch.ones((batch_size, 1))
+        batch_zeros = torch.zeros((batch_size, 1)).to(device)
+        batch_ones = torch.ones((batch_size, 1)).to(device)
 
         # ======== train/validate Discriminator ========
 
@@ -46,8 +46,8 @@ def _train(epoch, enc, dec, disc, prior_size, dl, vocab, mode='Train'):
             enc.zero_grad()
             disc.zero_grad()
 
-        z = torch.randn((batch_size, prior_size))
-        z_label = to_onehot(torch.tensor(np.random.randint(0, 2, (batch_size))), 2)
+        z = torch.randn((batch_size, prior_size)).to(device)
+        z_label = to_onehot(torch.tensor(np.random.randint(0, 2, (batch_size))), 2, device)
 
         latent = enc(seq)
         fake_pred = disc(latent, label)
@@ -69,10 +69,10 @@ def _train(epoch, enc, dec, disc, prior_size, dl, vocab, mode='Train'):
             dec.zero_grad()
             disc.zero_grad()
 
-        z = torch.randn((batch_size, prior_size))
+        z = torch.randn((batch_size, prior_size)).to(device)
 
         latent = enc(seq)
-        x = torch.zeros(1, batch_size).long() + vocab.stoi['<sos>']
+        x = torch.zeros(1, batch_size).to(device).long() + vocab.stoi['<sos>']
 
         h = None
 
@@ -120,9 +120,9 @@ def _train(epoch, enc, dec, disc, prior_size, dl, vocab, mode='Train'):
     return ae_loss, g_loss, disc_loss, bleu
 
 
-def train(epoch, enc, dec, disc, prior_size, dl, vocab):
-    _train(epoch, enc, dec, disc, prior_size, dl, vocab, mode='Train')
+def train(epoch, enc, dec, disc, prior_size, dl, vocab, device):
+    _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Train')
 
 
-def validate(epoch, enc, dec, disc, prior_size, dl, vocab):
-    _train(epoch, enc, dec, disc, prior_size, dl, vocab, mode='Valid')
+def validate(epoch, enc, dec, disc, prior_size, dl, vocab, device):
+    _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Valid')

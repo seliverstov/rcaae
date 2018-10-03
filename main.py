@@ -19,8 +19,6 @@ if __name__ == "__main__":
                         help='num epochs (default: 1)')
     parser.add_argument('--batch-size', type=int, default=32, metavar='BS',
                         help='batch size (default: 64)')
-    parser.add_argument('--use-cuda', type=bool, default=True, metavar='CUDA',
-                        help='use cuda (default: True)')
     parser.add_argument('--learning-rate', type=float, default=0.0001, metavar='LR',
                         help='learning rate (default: 0.0001)')
     parser.add_argument('--dropout', type=float, default=0.0, metavar='DR',
@@ -33,10 +31,22 @@ if __name__ == "__main__":
                         help='embeddings size (default: 50)')
     parser.add_argument('--vectors', type=str, default='glove.6B.50d', metavar='V',
                         help='embeddings size (default: glove.6B.50d)')
+    parser.add_argument('--cuda', type=int, default=0, metavar='CUDA',
+                        help='CUDA device numer (default: 0)')
+
 
     args = parser.parse_args()
 
+    print("========== Parameters ==========\n{}".format(args))
+
     torch.manual_seed(args.seed)
+
+    if torch.cuda.is_available():
+        device_num = args.cuda
+        device = f"cuda:{args.cuda}"
+    else:
+        device_num=-1
+        device="cpu"
 
     Multi30KEminem.download('.')
 
@@ -49,8 +59,6 @@ if __name__ == "__main__":
 
     train_ds, valid_ds, _ = Multi30KEminem.splits(TEXT, LABEL, '.')
 
-    print(f"Train DS size: {len(train_ds)}, Valid DS size: {len(valid_ds)}")
-
     TEXT.build_vocab(train_ds)
     LABEL.build_vocab(train_ds)
 
@@ -58,11 +66,9 @@ if __name__ == "__main__":
 
     label_size = len(LABEL.vocab)
 
-    print(f"Vocab size: {vocab_size}, num classes: {label_size}")
-
-    train_dl = torchtext.data.Iterator(train_ds, args.batch_size, repeat=False, shuffle=False)
-    valid_dl = torchtext.data.Iterator(valid_ds, args.batch_size, repeat=False)
-    gen_dl = torchtext.data.Iterator(train_ds, 1, repeat=False)
+    train_dl = torchtext.data.Iterator(train_ds, args.batch_size, repeat=False, shuffle=False, device=device_num)
+    valid_dl = torchtext.data.Iterator(valid_ds, args.batch_size, repeat=False, device=device_num)
+    gen_dl = torchtext.data.Iterator(train_ds, 1, repeat=False, device=device_num)
 
     if args.vectors:
         TEXT.vocab.load_vectors(args.vectors)
@@ -70,13 +76,13 @@ if __name__ == "__main__":
     prior_size = 2 * args.hidden_size
 
     enc = Encoder(vocab_size, args.embeddings_size, args.hidden_size, n_layers=1,
-                  dropout=args.dropout, lr=args.learning_rate, vectors=TEXT.vocab.vectors)
+                  dropout=args.dropout, lr=args.learning_rate, vectors=TEXT.vocab.vectors).to(device)
 
     dec = Decoder(vocab_size, args.embeddings_size, args.hidden_size, prior_size + label_size, n_layers=1,
-                  dropout=args.dropout, lr=args.learning_rate, vectors=TEXT.vocab.vectors)
+                  dropout=args.dropout, lr=args.learning_rate, vectors=TEXT.vocab.vectors).to(device)
 
     disc = Discriminator([prior_size + label_size, args.hidden_size, 1],
-                         dropout=0.3, lr=args.learning_rate, activation_fn=nn.LeakyReLU(0.2))
+                         dropout=0.3, lr=args.learning_rate, activation_fn=nn.LeakyReLU(0.2)).to(device)
 
     print("========== Encoder ==========\n{}".format(enc))
 
@@ -86,7 +92,10 @@ if __name__ == "__main__":
 
     for epoch in range(1, args.num_epochs+1):
         print("========== Start epoch {} at {} ==========".format(epoch, datetime.now().strftime("%H:%M:%S")))
-        train(epoch, enc, dec, disc, prior_size, train_dl, TEXT.vocab)
-        validate(epoch, enc, dec, disc, prior_size, valid_dl, TEXT.vocab)
-        print_decoded(enc, dec, gen_dl, TEXT.vocab)
-        print_sample(dec, sample_size=prior_size, max_seq_len=41, vocab=TEXT.vocab, style_vocab=LABEL.vocab)
+
+        train(epoch, enc, dec, disc, prior_size, train_dl, TEXT.vocab, device)
+        validate(epoch, enc, dec, disc, prior_size, valid_dl, TEXT.vocab, device)
+
+        print_decoded(enc, dec, gen_dl, vocab=TEXT.vocab, device=device)
+        print_sample(dec, sample_size=prior_size, max_seq_len=41, vocab=TEXT.vocab,
+                     style_vocab=LABEL.vocab, device=device)
