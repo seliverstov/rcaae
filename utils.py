@@ -5,9 +5,7 @@ from torch import Tensor
 from torchtext.vocab import Vocab
 from torchtext.data.iterator import Iterator
 from torch.nn import Module
-
 import spacy
-from spacy.symbols import ORTH
 
 
 def to_onehot(data: Tensor, n_digits: int, device: str) -> Tensor:
@@ -90,7 +88,7 @@ def print_sample(dec: Module, sample_size: int, max_seq_len: int,
 
 
 NLP = spacy.load('en')
-special_case = [{ORTH: '<nl>'}]
+special_case = [{"ORTH": '<nl>'}]
 NLP.tokenizer.add_special_case('<nl>', special_case)
 
 
@@ -98,10 +96,10 @@ def tokenizer(s: str) -> List[str]:
     if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
         s = s[1:-1]
 
-    s = re.sub(r"[\*\"“”\n\\…\+\-\/\=\(\)‘•:\[\]\|’\!;]", " ", str(s))
+    s = re.sub(r"[*\"“”\n\\…+\-/=()‘•:\[\]|’!;]", " ", str(s))
     s = re.sub(r"[ ]+", " ", s)
-    s = re.sub(r"\!+", "!", s)
-    s = re.sub(r"\,+", ",", s)
+    s = re.sub(r"!+", "!", s)
+    s = re.sub(r",+", ",", s)
     s = re.sub(r"\?+", "?", s)
 
     return [x.text for x in NLP.tokenizer(s) if x.text != " "]

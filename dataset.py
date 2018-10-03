@@ -3,7 +3,7 @@ from torch import Tensor
 from torchtext.data.dataset import Dataset
 from torchtext.data.example import Example
 from torchtext.data.field import Field
-from torchtext.data.iterator import Iterator
+from torchtext.data.iterator import Iterator, BucketIterator
 
 
 class Multi30KEminem(Dataset):
@@ -43,14 +43,14 @@ class Multi30KEminem(Dataset):
     def iters(cls, batch_size: int =32, device: int = 0, root: str ='.data',
               vectors: Tensor = None, **kwargs) -> Tuple[Iterator, Iterator, Iterator]:
 
-        TEXT = data.Field()
-        LABEL = data.Field(sequential=False)
+        text = Field()
+        label = Field(sequential=False)
 
-        train, valid, test = cls.splits(TEXT, LABEL, root=root, **kwargs)
+        train, valid, test = cls.splits(text, label, root=root, **kwargs)
 
-        TEXT.build_vocab(train, vectors=vectors)
-        LABEL.build_vocab(train)
+        text.build_vocab(train, vectors=vectors)
+        label.build_vocab(train)
 
-        return data.BucketIterator.splits(
+        return BucketIterator.splits(
             (train, test), batch_size=batch_size, device=device)
 

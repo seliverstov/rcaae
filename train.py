@@ -75,8 +75,6 @@ def _train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_si
             dec.zero_grad()
             disc.zero_grad()
 
-        z = torch.randn((batch_size, prior_size)).to(device)
-
         latent = enc(seq)
         x = torch.zeros(1, batch_size).to(device).long() + vocab.stoi['<sos>']
 

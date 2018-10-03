@@ -1,8 +1,5 @@
-import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import spacy
 import torchtext
 import argparse
 from datetime import datetime
@@ -15,8 +12,8 @@ from dataset import Multi30KEminem
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='RCAAE')
-    parser.add_argument('--num-epochs', type=int, default=3, metavar='NE',
-                        help='num epochs (default: 3)')
+    parser.add_argument('--num-epochs', type=int, default=100, metavar='NE',
+                        help='num epochs (default: 100)')
     parser.add_argument('--batch-size', type=int, default=64, metavar='BS',
                         help='batch size (default: 64)')
     parser.add_argument('--learning-rate', type=float, default=0.0001, metavar='LR',
@@ -31,9 +28,8 @@ if __name__ == "__main__":
                         help='embeddings size (default: 300)')
     parser.add_argument('--vectors', type=str, default='fasttext.en.300d', metavar='V',
                         help='embeddings size (default: fasttext.en.300d)')
-    parser.add_argument('--cuda', type=int, default=6, metavar='CUDA',
-                        help='CUDA device numer (default: 6)')
-
+    parser.add_argument('--cuda', type=int, default=0, metavar='CUDA',
+                        help='CUDA device numer (default: 0)')
 
     args = parser.parse_args()
 
@@ -45,8 +41,8 @@ if __name__ == "__main__":
         device_num = args.cuda
         device = f"cuda:{args.cuda}"
     else:
-        device_num=-1
-        device="cpu"
+        device_num = -1
+        device = "cpu"
 
     Multi30KEminem.download('..')
 
