@@ -13,9 +13,9 @@ from bleu import moses_multi_bleu
 
 
 def _train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_size: int,
-           dl: Iterator, vocab: Vocab, device: str, mode: str = 'Train') -> Tuple[float, float, float, float]:
+           dl: Iterator, vocab: Vocab, device: str, validate: bool = False) -> Tuple[float, float, float, float]:
 
-    if mode == 'Train':
+    if not validate:
         enc.train()
         dec.train()
         disc.train()
@@ -48,7 +48,7 @@ def _train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_si
 
         # ======== train/validate Discriminator ========
 
-        if mode == 'Train':
+        if not validate:
             enc.zero_grad()
             disc.zero_grad()
 
@@ -64,13 +64,13 @@ def _train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_si
 
         disc_loss = 0.5 * (fake_loss + true_loss)
 
-        if mode == 'Train':
+        if not validate:
             disc_loss.backward()
             disc.optim.step()
 
         # ======== train/validate Autoencoder ========
 
-        if mode == 'Train':
+        if not validate:
             enc.zero_grad()
             dec.zero_grad()
             disc.zero_grad()
@@ -95,7 +95,7 @@ def _train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_si
 
         g_loss = ae_loss + enc_loss
 
-        if mode == 'Train':
+        if not validate:
             g_loss.backward()
             dec.optim.step()
             enc.optim.step()
@@ -118,6 +118,8 @@ def _train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_si
 
     bleu = moses_multi_bleu(np.array(dec_strs), np.array(strs))
 
+    mode = 'Valid' if validate else 'Train'
+
     print("Epoch {:3} {:5}: BLEU: {:.2f}, AE: {:.5f}, G: {:.5f}, D: {:.5f} at {}".format(
         epoch, mode, bleu, ae_loss, g_loss, disc_loss, datetime.now().strftime("%H:%M:%S")))
 
@@ -127,10 +129,10 @@ def _train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_si
 def train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_size: int,
           dl: Iterator, vocab: Vocab, device: str) -> Tuple[float, float, float, float]:
 
-    return _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Train')
+    return _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, validate=False)
 
 
 def validate(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_size: int,
              dl: Iterator, vocab: Vocab, device: str) -> Tuple[float, float, float, float]:
 
-    return _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, mode='Valid')
+    return _train(epoch, enc, dec, disc, prior_size, dl, vocab, device, validate=True)
