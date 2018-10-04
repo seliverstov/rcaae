@@ -24,9 +24,9 @@ def _train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_si
         dec.eval()
         disc.eval()
 
-    g_loss = 0.0
-    ae_loss = 0.0
-    disc_loss = 0.0
+    epoch_g_loss = 0.0
+    epoch_ae_loss = 0.0
+    epoch_disc_loss = 0.0
 
     strs = []
     dec_strs = []
@@ -102,9 +102,9 @@ def _train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_si
 
         # ----------------------------------------------------
 
-        g_loss += g_loss.item()
-        ae_loss += ae_loss.item()
-        disc_loss += disc_loss.item()
+        epoch_g_loss += g_loss.item()
+        epoch_ae_loss += ae_loss.item()
+        epoch_disc_loss += disc_loss.item()
 
         _, w_idxs = output.topk(1, dim=1)
         dec_seq = w_idxs.view(seq_len, batch_size)
@@ -112,18 +112,18 @@ def _train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_si
         strs.extend(seq_to_str(seq.detach(), vocab))
         dec_strs.extend(seq_to_str(dec_seq.detach(), vocab))
 
-    g_loss /= n_batches
-    ae_loss /= n_batches
-    disc_loss /= n_batches
+    epoch_g_loss /= n_batches
+    epoch_ae_loss /= n_batches
+    epoch_disc_loss /= n_batches
 
     bleu = moses_multi_bleu(np.array(dec_strs), np.array(strs))
 
     mode = 'Valid' if validate else 'Train'
 
     print("Epoch {:3} {:5}: BLEU: {:.2f}, AE: {:.5f}, G: {:.5f}, D: {:.5f} at {}".format(
-        epoch, mode, bleu, ae_loss, g_loss, disc_loss, datetime.now().strftime("%H:%M:%S")))
+        epoch, mode, bleu, epoch_ae_loss, epoch_g_loss, epoch_disc_loss, datetime.now().strftime("%H:%M:%S")))
 
-    return ae_loss, g_loss, disc_loss, bleu
+    return epoch_ae_loss, epoch_g_loss, epoch_disc_loss, bleu
 
 
 def train(epoch: int, enc: nn.Module, dec: nn.Module, disc: nn.Module, prior_size: int,
