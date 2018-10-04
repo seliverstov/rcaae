@@ -48,7 +48,7 @@ python main.py
 * `--learning-rate` default: 0.0001
 * `--dropout` default: 0.3
 * `--hidden-size` LSTM hidden size, default: 500
-* `--seed'` default: 42
+* `--seed` default: 42
 * `--embeddings-size` default: 300
 * `--vectors` pretrained word vectors, default='fasttext.en.300d' (vectors loaded automatically by [torchtext](https://torchtext.readthedocs.io/en/latest/) library)
 * `--cuda` CUDA device numer, default: 0
