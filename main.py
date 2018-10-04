@@ -95,3 +95,7 @@ if __name__ == "__main__":
         print_decoded(enc, dec, gen_dl, vocab=TEXT.vocab, device=device)
         print_sample(dec, sample_size=prior_size, max_seq_len=41, vocab=TEXT.vocab,
                      style_vocab=LABEL.vocab, device=device)
+
+    torch.save(enc.state_dict(), 'rcaae.enc.pt')
+    torch.save(dec.state_dict(), 'rcaae.dec.pt')
+    torch.save(disc.state_dict(), 'rcaae.disc.pt')
