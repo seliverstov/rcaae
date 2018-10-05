@@ -8,6 +8,8 @@ Based on ideas from Samuel Bowman's [Generating Sentences from a Continuous Spac
 
 To train models was used a [special dataset](http://files.deeppavlov.ai/datasets/multi30k_eminem.4l.zip) with text samples of two different styles: small couplets from Eminem lyrics and several small sentences from [Multi30K dataset](https://github.com/multi30k/dataset). 
 
+<img src="rcaae.png" />
+
 ## Sampling examples
 ***
 ```
