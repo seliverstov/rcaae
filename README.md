@@ -9,6 +9,7 @@ Based on ideas from Samuel Bowman's [Generating Sentences from a Continuous Spac
 To train models was used a [special dataset](http://files.deeppavlov.ai/datasets/multi30k_eminem.4l.zip) with text samples of two different styles: small couplets from Eminem lyrics and several small sentences from [Multi30K dataset](https://github.com/multi30k/dataset). 
 
 ## Sampling examples
+***
 ```
 Decoded w. style `Eminem lyrics`:
 	the morning rain clouds up my window
@@ -21,6 +22,7 @@ Decoded w. style `Plain text`:
 	a man in a blue shirt is fixing a yellow and white speed train .
 	a man is standing on a ladder painting bricks . <eos>
 ```
+***
 ```
 Decoded w. style `Eminem lyrics`:
 	and i do n't even know you slim ,
@@ -33,10 +35,11 @@ Decoded w. style `Plain text`:
 	a man in a blue shirt is playing a keyboard and singing into a microphone .
 	a man in a black shirt is playing a trumpet . <eos>
 ```
-  
+***
+
 ## Usage
 
-To train model just run
+To train model use Jupyter Notebook [RCAAE.ipynb](RCAAE.ipynb) or just run
 
 ```sh
 python main.py
